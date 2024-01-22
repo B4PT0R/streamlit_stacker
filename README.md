@@ -31,15 +31,24 @@ stk=state.stacker
 stk.reset()
 
 if not 'test' in state:
-    #stack a chat message, won't be rendered immediately
-    with stk.chat_message():
-        stk.write("Hello!")
+    #stack a chat message and a button in a container, won't be rendered immediately
+    state.c=stk.container()
+    with state.c:
+        with stk.chat_message(name='user'):
+            stk.write("Hello!")
+            
+    #callback to add a new message when the button is clicked
+    def on_click():
+        with state.c:
+            with stk.chat_message(name='user'):
+                stk.write("Hello again!")
+
+    stk.button("click me!",on_click=on_click)
     state.test=True
 
-#render the stack: the chat message will appear on screen on every rerun, even though the corresponding commands have been called only once at first run
+#render the stack: the chat message and the button will appear on screen on every rerun, even though the corresponding commands have been called only once at first run
+#every click on the button will add another chat message to the container
 stk.refresh()
-
-
 ```
 
 ## License
