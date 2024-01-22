@@ -1,0 +1,5 @@
+
+{
+    "pdf":{"module":"streamlit_pdf_reader","component":"pdf_reader","type":"st_callable"},
+    "modal_input":{"module":"streamlit_modal_input","component":"modal_input","type":"st_callable"}
+}
