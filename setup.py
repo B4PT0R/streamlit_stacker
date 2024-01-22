@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='streamlit_stacker',
-    version='0.0.1',
+    version='0.0.2',
     author="Baptiste Ferrand",
     author_email="bferrand.maths@gmail.com",
     description="Tool allowing to stack streamlit commands and resolve them in a controlable manner.",
@@ -14,6 +14,9 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/B4PT0R/streamlit_stacker",
     packages=find_packages(),
+    package_data={
+        'streamlit_stacker': ['components.json'],
+    },
     # Specify the dependencies
     install_requires=[
         'streamlit>=1.30.0',
