@@ -2,15 +2,22 @@
 # streamlit_stacker
 
 streamlit_stacker is a python package implementing a main st_stacker class.
-This class can be used with similar syntax as the streamlit module but the calls to commands will be stacked and rendered latter in a controlable manner.
+This class can be used with similar syntax as the streamlit module but the attribute calls will be stacked in a list (the stack) instead of being resolved. A simple call to the refresh() method will deal with rendering (=actually execute the corresponding streamlit commands of) the whole stack on demand.
 
-Useful to implement dynamic execution of streamlit commands in an interactive console interface.
-Supports (almost) all streamlit methods
+Populating a stack with attribute calls, context mangers and callbacks thus becomes similar to setting up a gui layout in an object oriented manner.
+
+On top of being added to the stack, all st_stacker attribute calls will return one or several st_output objects. These are meant to be placeholder objects anticipating the reception of actual outputs returned by streamlit attribute calls when they will get executed. 
+
+The .value property will get actualized in real time as soon as the corresponding streamlit widgets have a non-empty state.
+
+This module is very useful to implement stateful and/or dynamic execution of streamlit commands in an interactive web interface.
+
+It is meant to support all streamlit commands and syntaxes allowed by the streamlit module. If not, feel free to report an issue, we'll work on it :).
 
 ## Installation
 
 ```bash
-$ pip install streamlit_stacker
+$ pip install streamlit-stacker
 ```
 
 ## Usage
