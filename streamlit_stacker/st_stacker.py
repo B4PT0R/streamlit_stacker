@@ -263,12 +263,9 @@ class st_output(st_object):
             return self._value
         
     def __repr__(self):
-        if self.call_kwargs:
-            kwargs_string=','+','.join(f"{key}={repr(value)}" for key,value in self.call_kwargs.items())
-        else:
-            kwargs_string=''
+        kwargs_string=','.join(f"{key}={repr(value)}" for key,value in self.call_kwargs.items())
         args_string=','.join(f'{repr(arg)}' for arg in self.call_args)
-        return f"st_output(name={repr(self.call_name)},args=({args_string}){kwargs_string},key={repr(self.key)})"
+        return f"st_output(name={repr(self.call_name)},args=({args_string}),kwargs={{{kwargs_string}}})"
 
 
 class st_property(st_renderable):
@@ -366,7 +363,6 @@ class st_stacker:
             self.key_manager=key_manager
         self.mode=mode
         self.stack=[]
-        self.pile=[]
         self.hidden_tags=[]
         self.current_context=None
         self.echo=echo_generator(self)
@@ -388,57 +384,54 @@ class st_stacker:
         #Refer to the components.py module to see how ATTRIBUTES_MAPPING is defined
         if attr in ATTRIBUTES_MAPPING:
             obj=instantiate(ATTRIBUTES_MAPPING[attr],self,attr,context=self.current_context)
-            return obj #The object itself will deal with its appending to the stacker's stack once all information required to render it is available (such as call arguments, outputs etc...)
+            return obj #The object itself will deal with its appending to the stack once all information required to render it is available (such as call arguments, outputs etc...)
         else:
             raise AttributeError
 
     def append(self,obj):
-        #appends an object to the stacker's pile
-        self.pile.append(obj)
+        #appends an object to the stack, render it immediately in streamed mode
         if self.mode=='streamed':
-            while len(self.pile)>0:
-                self.stream()
+            self.refresh()
+            self.render(obj)
+        self.stack.append(obj)
+        
+    def render(self,obj):
+        if not obj.has_rendered and not obj.tag in self.hidden_tags:
+            try:
+                obj.render()
+            except DuplicateWidgetID:
+                #Some widgets take several mainloop turns to be consumed by streamlit and leave screen
+                #This avoids to attempt rerendering them while they are still active  
+                pass
+
 
     def remove(self,obj):
-        #removes an object from the stacker's pile/stack (useful for st_one_shot_callable objects)
-        if obj in self.pile:
-            self.pile.remove(obj)
+        """
+        removes an object from the stack (useful for st_one_shot_callable objects)
+        """
         if obj in self.stack:
             self.stack.remove(obj)
 
-    def stream(self):
-        #renders the first object found in the pile, then moves it to the stack
-        #useful for real-time rendering
-        if not len(self.pile)==0:
-            obj=self.pile.pop(0)
-            if not obj.has_rendered and not obj.tag in self.hidden_tags:
-                try:
-                    obj.render()
-                except DuplicateWidgetID:
-                    #Some widgets take several mainloop turns to be consumed by streamlit and leave screen
-                    #This avoids to attempt rerendering them while they are still active  
-                    pass
-            self.stack.append(obj)
 
     def refresh(self):
-        #renders every object in the stack (to refresh the whole app display), then renders objects still in the pile, if any.
+        """
+        renders every object in the stack (to refresh the whole app display).
+        """
         for obj in self.stack:
-            if not obj.has_rendered and not obj.tag in self.hidden_tags:
-                try:
-                    obj.render()
-                except DuplicateWidgetID:
-                    pass
-        while len(self.pile)>0:
-            self.stream()
+            self.render(obj)
             
 
     def reset(self):
-        #Supposed to be called at the beginning of the streamlit main app script (understood as the mainloop of the app)
-        #widgets need to be rendered every turn of the mainloop, otherwise these widgets will disappear from the app's display.
-        #This resets all objects in the stack to a non-rendered state so that the next call to refresh will render them all again
+        """
+        Supposed to be called at the beginning of the streamlit main app script (understood as the mainloop of the app)
+        widgets need to be rendered every turn of the mainloop, otherwise these widgets will disappear from the app's display.
+        This resets all objects in the stack to a non-rendered state so that the next call to refresh will render them all again
+        """
         for obj in self.stack:
             obj.has_rendered=False
 
     def clear(self):
-        self.stack=[]
-        self.pile=[] 
+        """
+        clears the whole stack
+        """
+        self.stack.clear()
