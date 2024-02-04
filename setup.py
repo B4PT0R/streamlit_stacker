@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='streamlit_stacker',
-    version='0.0.5',
+    version='0.0.6',
     author="Baptiste Ferrand",
     author_email="bferrand.maths@gmail.com",
     description="Tool allowing to stack streamlit commands and resolve them in a controlable manner.",

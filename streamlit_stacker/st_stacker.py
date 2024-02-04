@@ -371,7 +371,7 @@ class st_stacker:
 
     def set_current_code_hook(self,current_code_hook):
         self.current_code_hook=current_code_hook
-        self.echo=echo(self,get_current_code=self.current_code_hook)
+        self.echo=echo(self,current_code_hook=self.current_code_hook)
     
     def hide(self,tag):
         if not tag in self.hidden_tags:
