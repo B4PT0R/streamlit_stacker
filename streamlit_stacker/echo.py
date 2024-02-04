@@ -8,11 +8,11 @@ import contextlib
 import textwrap
 import traceback
 
-class echo_generator:
+class echo:
 
-    def __init__(self,deferrer,source_code=None):
-        self.source_code=source_code
-        self.deferrer=deferrer
+    def __init__(self,stacker,current_code_hook=None):
+        self.current_code_hook=current_code_hook
+        self.stacker=stacker
 
     @contextlib.contextmanager
     def __call__(self,code_location="above"):
@@ -20,7 +20,7 @@ class echo_generator:
         from streamlit import source_util
 
         if code_location == "above":
-            placeholder = self.deferrer.empty()
+            placeholder = self.stacker.empty()
 
         try:
             # Get stack frame *before* running the echoed code. The frame's
@@ -28,13 +28,13 @@ class echo_generator:
             frame = traceback.extract_stack()[-3]
             filename, start_line = frame.filename, frame.lineno
 
-            if self.source_code is None:
+            if self.current_code_hook is None:
                 # Read the file containing the source code of the echoed statement.
                 with source_util.open_python_file(filename) as source_file:
                     source_lines = source_file.readlines()
             else:
                 # Read the passed source code directly
-                source_lines=self.source_code.splitlines(True)
+                source_lines=self.current_code_hook().splitlines(True)
 
             # Use ast to parse the Python file and find the code block to display
             root_node = ast.parse("".join(source_lines))
@@ -60,21 +60,21 @@ class echo_generator:
             # draw the code string to the app.
             if code_location=="above":
                 with placeholder:
-                    self.deferrer.code(code_string)
+                    self.stacker.code(code_string)
 
             # Run the echoed code...
             yield
 
             
             if not code_location=="above":
-                self.deferrer.code(code_string)
+                self.stacker.code(code_string)
 
         except Exception as err:
             if code_location=="above":
                 with placeholder:
-                    self.deferrer.warning("Unable to display code. %s" % err)
+                    self.stacker.warning("Unable to display code. %s" % err)
             else:
-                self.deferrer.warning("Unable to display code. %s" % err)
+                self.stacker.warning("Unable to display code. %s" % err)
 
     
 

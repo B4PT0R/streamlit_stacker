@@ -11,7 +11,7 @@ import time
 # Imports custom components and a mapping of streamlit methods/attributes onto the appropriate stacked version
 from components import COMPONENTS,ATTRIBUTES_MAPPING
 #Specificaly deals with st.echo
-from echo import echo_generator
+from echo import echo
 from streamlit.errors import DuplicateWidgetID
 from contextlib import contextmanager
 import logging
@@ -356,7 +356,7 @@ class st_stacker:
     Keeps the current context required for widget rendering 
     """
 
-    def __init__(self,key_manager=None,mode='static'):
+    def __init__(self,key_manager=None,mode='static',current_code_hook=None):
         if key_manager==None:
             self.key_manager=KeyManager()
         else:
@@ -365,8 +365,13 @@ class st_stacker:
         self.stack=[]
         self.hidden_tags=[]
         self.current_context=None
-        self.echo=echo_generator(self)
+        self.current_code_hook=current_code_hook
+        self.echo=echo(self,current_code_hook=self.current_code_hook)
         self.secrets=None
+
+    def set_current_code_hook(self,current_code_hook):
+        self.current_code_hook=current_code_hook
+        self.echo=echo(self,get_current_code=self.current_code_hook)
     
     def hide(self,tag):
         if not tag in self.hidden_tags:
