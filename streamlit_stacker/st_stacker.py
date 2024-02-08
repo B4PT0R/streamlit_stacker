@@ -353,8 +353,10 @@ class st_one_shot_callable(st_renderable):
 
 
 class st_direct_callable:
-    # Resolves streamlit call directly without appending to the stack
-    # useful for st.progress. st.spinner, st.column_config, st.ballons, st.snow (optional delay to let the animation finish before the next rerun)
+    """
+    Resolves streamlit call directly without appending to the stack
+    Useful for st.progress. st.spinner, st.column_config, st.ballons, st.snow (optional delay to let the animation finish before the next rerun)
+    """
     def __init__(self,stacker,name,context):
         self.stacker=stacker
         self.name=name
