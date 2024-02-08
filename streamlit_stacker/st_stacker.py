@@ -20,6 +20,9 @@ log = logging.getLogger("log")
 log.setLevel(logging.DEBUG)
 
 def split_dict(mydict,keys):
+    """
+    splits a dict into two subdicts, the first one having the chosen keys
+    """
     d1={}
     d2={}
     for key in mydict:
@@ -30,6 +33,9 @@ def split_dict(mydict,keys):
     return d1,d2
 
 def inspect_key(name,key):
+    """
+    Checks if a callable has "key" as kwarg
+    """
     from inspect import getfullargspec
     try:
         return key in getfullargspec(st_map(name))[0]
@@ -37,10 +43,17 @@ def inspect_key(name,key):
         return False
 
 def instantiate(class_name, *args, **kwargs):
+    """
+    Fetchs a callable in globals() from its name, and apply it on chosen args and kwargs
+    Useful to create an instance of a class by calling its constructor
+    """
     cls = globals()[class_name] 
     return cls(*args, **kwargs)
 
 def isiterable(obj):
+    """
+    Checks if an object is iterable (strings excluded)
+    """
     try:
         it=iter(obj)
     except:
@@ -52,7 +65,11 @@ def isiterable(obj):
             return True
 
 class NoContext:
-    def __init__(self):
+    """
+    A context manager that does nothing.
+    Useful when part of your code expects a context manager but you don't want to implement any context
+    """
+    def __init__(self,*args,**kwargs):
         pass
     def __enter__(self,*args,**kwargs):
         pass
@@ -60,11 +77,16 @@ class NoContext:
         pass
 
 class KeyManager:
-# A simple widget key manager
+    """
+    A simple key manager to automate Streamlit widget key attribution
+    """
     def __init__(self):
         self.keys=[]
 
     def gen_key(self):
+        """
+        Generates a unique key
+        """
         i=0
         while ((key:='key_'+str(i)) in self.keys):
             i+=1
@@ -72,22 +94,29 @@ class KeyManager:
         return key
     
     def dispose(self,key):
+        """
+        Removes a key from the list when its no longer used
+        """
         if key in self.keys:
             self.keys.remove(key)
 
 def st_map(attr):
-# Maps attributes keys to streamlit built-in or custom components objects
-        try:
-            return getattr(st,attr)
-        except:
-            if attr in COMPONENTS:
-                return COMPONENTS[attr]
-            else:
-                raise Exception(f"Unknown streamlit attribute: {attr}")
+    """
+    A function that maps an attribute name to the corresponding Streamlit built-in or custom component object
+    """
+    try:
+        return getattr(st,attr)
+    except:
+        if attr in COMPONENTS:
+            return COMPONENTS[attr]
+        else:
+            raise Exception(f"Unknown streamlit attribute: {attr}")
 
 @contextmanager
 def ctx(context):
-# Context manager to open/close streamlit objects as context for others at rendering time
+    """
+    Context manager to open/close streamlit objects as context for others at rendering time
+    """
     if not context==None:
         if isinstance(context,(st_callable,st_one_shot_callable)):
             with st_map(context.name)(*context.args,**context.kwargs):
@@ -107,7 +136,9 @@ def ctx(context):
             yield
 
 def render(callable):
-# Renders stacked widgets by calling streamlit / third party components and captures outputs if any
+    """
+    Renders stacked widgets by calling streamlit / third party components and captures outputs if any    
+    """
     results=st_map(callable.name)(*callable.args,**callable.kwargs)
     if 'key' in callable.kwargs:
         key=callable.kwargs['key']
@@ -125,8 +156,10 @@ def render(callable):
             callable.outputs[0].key=key
 
 class st_object:
-# Base class for stacked version of streamlit objects
-# Makes them usable as context managers for other objects
+    """
+    Base class for stacked version of streamlit objects
+    Makes them usable as context managers for other objects
+    """ 
     def __init__(self,stacker,context=None):
         self.stacker=stacker
         self.context=context
@@ -140,7 +173,9 @@ class st_object:
         self.stacker.current_context = self.context
 
 class st_renderable(st_object):
-# Base class for objects that need rendering
+    """
+    Base class for objects that need rendering    
+    """
     def __init__(self,stacker,name,context=None):
         st_object.__init__(self,stacker,context)
         self.name=name
@@ -155,7 +190,9 @@ class st_renderable(st_object):
             self.has_rendered=True
 
 class st_callable(st_renderable):
-# For most common callable objects like st.write, st.button, st.text_input...
+    """
+    For most common callable objects like st.write, st.button, st.text_input...
+    """
     def __init__(self,stacker,name,context=None):
         st_renderable.__init__(self,stacker,name,context)
         self.iter_counter=0
@@ -189,7 +226,9 @@ class st_callable(st_renderable):
         return obj
 
 class st_unpackable_callable(st_renderable):
-    # For unpackable objects like st.columns, st.tabs...
+    """
+    For unpackable objects like st.columns, st.tabs...
+    """
     def __init__(self,stacker,name,context=None):
         st_renderable.__init__(self,stacker,name,context)
         self.iter_counter=0
@@ -235,7 +274,9 @@ class st_unpackable_callable(st_renderable):
             return 1
 
 class st_output(st_object):
-    # Placeholder object for outputs of callables
+    """
+    Placeholder object for outputs of callables
+    """
     def __init__(self,stacker,context,call_name=None,call_args=None,call_kwargs=None):
         st_object.__init__(self,stacker,context)
         self._value=None
@@ -269,7 +310,9 @@ class st_output(st_object):
 
 
 class st_property(st_renderable):
-    # For property-like objects such as st.sidebar
+    """
+    For property-like objects such as st.sidebar
+    """
     def __init__(self,stacker,name,context=None):
         st_renderable.__init__(self,stacker,name,context)
         self.value=None
@@ -288,8 +331,9 @@ class st_property(st_renderable):
             self.value=st_map(self.name)
 
 class st_one_shot_callable(st_renderable):
-    # For callables that need to be rendered only once
-    # such as st.balloons, st.snow...
+    """
+    For callables that need to be rendered only once
+    """
     def __init__(self,stacker,name,context=None):
         st_renderable.__init__(self,stacker,name,context)
         self.outputs=[]
@@ -310,7 +354,7 @@ class st_one_shot_callable(st_renderable):
 
 class st_direct_callable:
     # Resolves streamlit call directly without appending to the stack
-    # useful for st.spinner, st.progress. st.balloons st.snow (optional delay to let the animation finish before the next rerun)
+    # useful for st.progress. st.spinner, st.column_config, st.ballons, st.snow (optional delay to let the animation finish before the next rerun)
     def __init__(self,stacker,name,context):
         self.stacker=stacker
         self.name=name
@@ -327,8 +371,10 @@ class st_direct_callable:
 
 
 def st_direct_property(stacker,name,context):
-    # Returns a streamlit property directly without appending to the stack
-    # Useful for st.column_config, st.session_state...
+    """
+    Returns a streamlit property directly without appending to the stack
+    Useful for st.column_config, st.session_state...
+    """ 
     with ctx(context):
         value=st_map(name)
     return value    
@@ -370,23 +416,38 @@ class st_stacker:
         self.secrets=None
 
     def set_current_code_hook(self,current_code_hook):
+        """
+        echo needs to be aware of the code currently being executed
+        this hook allows to pass the current code to the stacker so that echo works fine
+        """
         self.current_code_hook=current_code_hook
         self.echo=echo(self,current_code_hook=self.current_code_hook)
     
     def hide(self,tag):
+        """
+        hide all widgets with the chosen tag (they remain in the stack but won't be rendered)
+        """
         if not tag in self.hidden_tags:
             self.hidden_tags.append(tag)
 
     def show(self,tag):
+        """
+        show (render) all widgets with the chosen tag
+        """
         if tag in self.hidden_tags:
             self.hidden_tags.remove(tag)
 
     def gen_key(self):
+        """
+        Generates a unique key for a widget
+        """
         return self.key_manager.gen_key()
 
     def __getattr__(self,attr):
-        #instantiate the adequate st_object subtype corresponding to the attribute according to ATTRIBUTES_MAPPING
-        #Refer to the components.py module to see how ATTRIBUTES_MAPPING is defined
+        """
+        Instantiate the adequate st_object subtype corresponding to the attribute according to ATTRIBUTES_MAPPING
+        Refer to the components.py module to see how ATTRIBUTES_MAPPING is defined
+        """
         if attr in ATTRIBUTES_MAPPING:
             obj=instantiate(ATTRIBUTES_MAPPING[attr],self,attr,context=self.current_context)
             return obj #The object itself will deal with its appending to the stack once all information required to render it is available (such as call arguments, outputs etc...)
@@ -394,13 +455,18 @@ class st_stacker:
             raise AttributeError
 
     def append(self,obj):
-        #appends an object to the stack, render it immediately in streamed mode
+        """
+        Appends an object to the stack, render it immediately in streamed mode
+        """
         if self.mode=='streamed':
             self.refresh()
             self.render(obj)
         self.stack.append(obj)
         
     def render(self,obj):
+        """
+        Renders a widget from the stack
+        """
         if not obj.has_rendered and not obj.tag in self.hidden_tags:
             try:
                 obj.render()
